@@ -54,6 +54,32 @@ function NotGrid:OnEnable()
 	self:ScheduleRepeatingEvent("NG_UNIT_PROXIMITY", self.o.proximityrate)
 end
 
+function NotGrid:UNIT_RAID_TARGET(unitid)
+	local o = self.o
+
+	if not o.showraidicon then return end
+
+	if o.configmode then
+		unitid = "player"
+	end
+
+	local f = self.UnitFrames[unitid]
+	if f and UnitExists(unitid) then
+		local raidIcon = UnitName(unitid) and GetRaidTargetIndex(unitid)
+		if o.configmode then
+			raidIcon = math.random(1,8)
+		end
+		if raidIcon then
+			SetRaidTargetIconTexture(f.raidicon.texture, raidIcon)
+			f.raidicon:Show()
+		else
+			f.raidicon:Hide()
+		end
+	end
+
+end
+
+
 ---------------
 -- UNIT_MAIN -- Handles the healthbar, healthtext, healcommbar, healcommtext, ressurection, nametext, classcolor..
 ---------------
@@ -459,10 +485,12 @@ function NotGrid:RosterLib_UnitChanged(unitid, name, class, subgroup, rank, oldn
 		self:UNIT_MAIN(unitid)
 		self:UNIT_BORDER(unitid)
 		self:UNIT_AURA(unitid)
+		self:UNIT_RAID_TARGET(unitid)
 		if self.IdenticalUnits[unitid] then
 			self:UNIT_MAIN(self.IdenticalUnits[unitid])
 			self:UNIT_BORDER(self.IdenticalUnits[unitid])
 			self:UNIT_AURA(self.IdenticalUnits[unitid])
+			self:UNIT_RAID_TARGET(self.IdenticalUnits[unitid])
 		end
 	end
 end

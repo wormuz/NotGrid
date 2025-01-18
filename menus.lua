@@ -145,6 +145,25 @@ local menuarray = {
 
 	{text = "",},
 
+	{text = L["Show Raid Icon"],
+	 toggle = "showraidicon",
+	},
+	{text = L["Raid Icon Size"],
+	 slider = {
+		 key = "raidiconsize",
+		 minval = 1,
+		 maxval = 100,
+	 },
+	},
+	{text = L["Raid Icon Position"],
+	 position = {
+		 xkey = "raidiconoffx",
+		 ykey = "raidiconoffy",
+	 },
+	},
+
+	{text = "",},
+
 	{text = L["Show Power Bar"],
 	toggle = "showpowerbar",
 	},
@@ -908,9 +927,11 @@ end
 -------------------------
 
 function NotGridOptionChange()
+	DEFAULT_CHAT_FRAME:AddMessage("NotGridOptionChange")
 	NotGrid:ConfigUnitFrames()
 	for unitid,_ in NotGrid.UnitFrames do
 		NotGrid:UNIT_MAIN(unitid)
+		NotGrid:UNIT_RAID_TARGET(unitid)
 		NotGrid:UNIT_BORDER(unitid)
 		NotGrid:UNIT_AURA(unitid)
 	end

@@ -27,6 +27,11 @@ local DefaultOptions = {
 	["unittrackingiconborder"] = 1,
 	["unittrackingiconbordercolor"] = {0,0,0,1},
 
+	["showraidicon"] = true,
+	["raidiconsize"] = 10,
+	["raidiconoffx"] = 0,
+	["raidiconoffy"] = 10,
+
 	["showpowerbar"] = false,
 	["powersize"] = 3, -- this will be width if the player chooses to make it Verical, or height if they make it Horizontal
 	["powerposition"] = 3, -- 1=top,2=bottom,3=left,4=right

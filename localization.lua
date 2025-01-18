@@ -58,6 +58,9 @@ L:RegisterTranslations("enUS", function() return {
 ["Healcomm Text Position"] = true,
 ["Version Checking"] = true,
 ["Draggable"] = true,
+["Show Raid Icon"] = true,
+["Raid Icon Size"] = true,
+["Raid Icon Position"] = true,
 
 ["CombatEvents"] = {
 	["CHAT_MSG_SPELL_PERIODIC_PARTY_BUFFS"] = "(%a+) gains %a.+", --%a on the last just to make sure its not a digit
