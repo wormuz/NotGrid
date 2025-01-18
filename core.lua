@@ -59,15 +59,20 @@ function NotGrid:UNIT_RAID_TARGET(unitid)
 
 	if not o.showraidicon then return end
 
+	local f = self.UnitFrames[unitid]
 	if o.configmode then
 		unitid = "player"
 	end
 
-	local f = self.UnitFrames[unitid]
 	if f and UnitExists(unitid) then
 		local raidIcon = UnitName(unitid) and GetRaidTargetIndex(unitid)
 		if o.configmode then
-			raidIcon = math.random(1,8)
+			local id = string.sub(f.unit, -1)
+			id = tonumber(id)
+			if not id then id = 1 end
+			if id == 0 then id = 1 end
+			if id > 8 then id = 8 end
+			raidIcon = id
 		end
 		if raidIcon then
 			SetRaidTargetIconTexture(f.raidicon.texture, raidIcon)
