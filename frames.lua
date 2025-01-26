@@ -204,7 +204,6 @@ function NotGrid:ConfigUnitFrames() -- this can get called on every setting chan
 
 
 		-- raid target icon
-		--DEFAULT_CHAT_FRAME:AddMessage("Configuring raid icon ")
 		f.raidicon:SetWidth(o.raidiconsize)
 		f.raidicon:SetHeight(o.raidiconsize)
 		f.raidicon:SetPoint("CENTER", f.healthbar, "CENTER", o.raidiconoffx, o.raidiconoffy)
@@ -388,7 +387,6 @@ function NotGrid:PositionFrames()
 					f:Show()
 					TotalUnits = TotalUnits+1
 					SubGroupCounts[i] = SubGroupCounts[i]+1
-					--DEFAULT_CHAT_FRAME:AddMessage(f.unit .. " positioned")
 				end
 			else
 				f:Hide()

@@ -520,7 +520,6 @@ function NotGrid:InitializeMenu()
 			fb.clr.tex:SetAllPoints()
 			fb.clr:SetPoint("LEFT",fb,"RIGHT",0,0)
 			fb.clr:SetScript("OnClick", function()
-				--DEFAULT_CHAT_FRAME:AddMessage(NotGridOptions[this.color.key][1])
 				self:ClickColor()
 			end)
 		end
@@ -832,7 +831,6 @@ local workingcolorkey
 function NotGrid:ClickColor()
 	workingcolorswatch = this.tex
 	workingcolorkey = this.color.key
-	--DEFAULT_CHAT_FRAME:AddMessage(workingcolorkey.." "..workingcolorswatch:GetName())
 	local r, g, b, a = unpack(NotGridOptions[workingcolorkey])
 	ColorPickerFrame.previousValues = {r, g, b, a}
 	ColorPickerFrame.func = self.ColorPickerHandler
@@ -927,7 +925,6 @@ end
 -------------------------
 
 function NotGridOptionChange()
-	DEFAULT_CHAT_FRAME:AddMessage("NotGridOptionChange")
 	NotGrid:ConfigUnitFrames()
 	for unitid,_ in NotGrid.UnitFrames do
 		NotGrid:UNIT_MAIN(unitid)

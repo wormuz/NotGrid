@@ -35,7 +35,6 @@ function NotGrid:OnEnable()
 	end
 	--
 	self:RegisterEvent("PLAYER_ENTERING_WORLD")
-	self:RegisterEvent("CHAT_MSG_ADDON")
 	self:RegisterEvent("ZONE_CHANGED_NEW_AREA","UpdateProximityMapVars")
 	self:RegisterEvent("PARTY_MEMBERS_CHANGED","BlizzFrameHandler")
 	self:RegisterEvent("RAID_ROSTER_UPDATE","BlizzFrameHandler")
@@ -515,15 +514,6 @@ function NotGrid:PLAYER_ENTERING_WORLD() -- when they login,reloadui,or zone in/
 	end
 	self:UpdateProximityMapVars() -- zoning into an instance won't trigger a zonechange event if the outdoors name is the same name as the indoors. This ensures the vars update.
 	self:BlizzFrameHandler()
-end
-
-function NotGrid:CHAT_MSG_ADDON()
-	if arg1 == "NotGrid" and self.o.versionchecking then
-		if tonumber(arg2) > self.o.version and not self.versionalreadyshown then
-			DEFAULT_CHAT_FRAME:AddMessage("|cff0ccca6NotGrid:|r A newer version may be available.")
-			self.versionalreadyshown = true
-		end
-	end
 end
 
 --have to handle the blizzframes seperately because rosterlib only fires if a member changed, wheras PARTY_MEMBERS_CHANGED fires for loot and other reasons as well
