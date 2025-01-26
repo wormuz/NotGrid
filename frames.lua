@@ -59,6 +59,10 @@ function NotGrid:CreateUnitFrame(unitid,raidindex)
 	for i=1,8 do
 		f.healthbar["trackingicon"..i] = CreateFrame("Frame","$parenttrackingicon"..i,f.healthbar) -- easier to work with digits than topleft/topright/etc..
 	end
+
+	f.raidicon = CreateFrame("Frame", nil, f.healthbar)
+	f.raidicon.texture = f.raidicon:CreateTexture(nil,"OVERLAY")
+
 	--scripts and stuff
 	f:RegisterForClicks("LeftButtonDown", "RightButtonDown", "MiddleButtonDown", "Button4Down", "Button5Down") -- somehow I recall this not matterign?
 	f:RegisterForDrag("LeftButton")
@@ -118,6 +122,9 @@ function NotGrid:CreateUnitFrame(unitid,raidindex)
 	f:RegisterEvent("PLAYER_TARGET_CHANGED")
 	--banzai/healcomm are registered in core on enable
 
+	--used for update raid icon
+	f:RegisterEvent("RAID_TARGET_UPDATE")
+
 	f:SetScript("OnEvent", function()
 		if arg1 and arg1 == this.unit then -- if an event has coniditions specific to a unit, then only specified unit will update
 			if event == "UNIT_AURA" then
@@ -126,6 +133,8 @@ function NotGrid:CreateUnitFrame(unitid,raidindex)
 				self:UNIT_MAIN(this.unit)
 				self:UNIT_BORDER(this.unit)
 			end
+		elseif event == "RAID_TARGET_UPDATE" then
+				self:UNIT_RAID_TARGET(this.unit)
 		elseif event == "PLAYER_TARGET_CHANGED" then -- all units will update their border
 			self:UNIT_BORDER(this.unit)
 		end
@@ -192,6 +201,17 @@ function NotGrid:ConfigUnitFrames() -- this can get called on every setting chan
 		f.healthbar.bgtex:SetTexture(o.unithealthbarbgtexture)
 		f.healthbar.bgtex:SetVertexColor(unpack(o.unithealthbarbgcolor))
 		f.healthbar.bgtex:SetAllPoints()
+
+
+		-- raid target icon
+		DEFAULT_CHAT_FRAME:AddMessage("Configuring raid icon ")
+		f.raidicon:SetWidth(o.raidiconsize)
+		f.raidicon:SetHeight(o.raidiconsize)
+		f.raidicon:SetPoint("CENTER", f.healthbar, "CENTER", o.raidiconoffx, o.raidiconoffy)
+		f.raidicon.texture:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcons")
+		f.raidicon.texture:SetAllPoints(f.raidicon)
+		f.raidicon:Hide()
+
 
 		--position health and powerbar
 		f.healthbar:ClearAllPoints()
