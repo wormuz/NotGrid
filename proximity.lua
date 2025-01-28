@@ -47,6 +47,8 @@ function NotGrid:CheckProximity(unitid) -- return 1=confirmed_true, 2=confirmed_
 		--check these scenarios first even if the player has check with map toggled
 		if UnitIsUnit(unitid, "player") then --unitisplayer, 0 yards
 			return 1
+		elseif UnitXP and UnitXP("distanceBetween", "player", unitid) <= 40 then
+			return 1
 		elseif UnitXP and not UnitXP("inSight", "player", unitid) then -- use UnitXP to check if unit is in sight
 			return 2
 		elseif CheckInteractDistance(unitid, 3) then -- duel range, 10 yards
