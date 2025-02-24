@@ -350,6 +350,55 @@ end
 -- On Unit Click --
 -------------------
 
+local _, playerClass = UnitClass("player")
+local has_unitxp = pcall(UnitXP, "inSight", "player", "player")
+local has_pepo_nam = pcall(GetCVar, "NP_QueueCastTimeSpells")
+
+local hasUnitBuff = function(unit)
+	local i = 1
+	local hasRejuv = false
+	local hasRegrowth = false
+	local hasCurse = false
+	local hasPoison = false
+	local hasAbolish = false
+	while true do
+		NotGrid.Gratuity:SetUnitBuff(unit, i)
+		local buffName = NotGrid.Gratuity:GetLine(1, false)
+		local buffType = NotGrid.Gratuity:GetLine(1, true)
+		if not buffName then
+			break
+		end
+
+		if string.find(buffName, 'Rejuvenation') then
+			hasRejuv = true
+		elseif string.find(buffName, 'Regrowth') then
+			hasRegrowth = true
+		elseif string.find(buffName, 'Abolish Poison') then
+			hasAbolish = true
+		end
+
+		if buffType == 'Curse' then
+			hasCurse = true
+		elseif buffType == 'Poison' then
+			hasPoison = true
+		end
+
+		if buffName and string.find(buffName, name) then
+			return true
+		end
+		i = i + 1
+	end
+	return hasRejuv, hasRegrowth, hasAbolish, hasCurse, hasPoison
+end
+
+local castSpell = function(spell, unit)
+	if has_pepo_nam then
+		QueueSpellByName(spell, unit)
+	else
+		CastSpellByName(spell, unit)
+	end
+end
+
 function NotGrid:ClickHandle(button)
 	if button == "RightButton" and SpellIsTargeting() then
 		SpellStopTargeting()
@@ -362,6 +411,27 @@ function NotGrid:ClickHandle(button)
 			DropItemOnUnit(this.unit)
 		else
 			TargetUnit(this.unit)
+
+			if has_unitxp and playerClass == "DRUID" then
+				if UnitXP("inSight", "player", this.unit) and UnitXP("distanceBetween", "player", this.unit) <= 40 then
+
+					local deficit = UnitHealthMax(this.unit) - UnitHealth(this.unit)
+					local deficitPercent = (deficit / UnitHealthMax(this.unit)) * 100
+					local hasRejuv, hasRegrowth, hasAbolish, hasCurse, hasPoison = hasUnitBuff(this.unit)
+
+					if hasCurse then
+						castSpell("Remove Curse", this.unit)
+					elseif hasPoison and not hasAbolish then
+						castSpell("Abolish Poison", this.unit)
+					elseif deficitPercent > 10 and (hasRegrowth or hasRejuv) then
+						local slotSwiftmend, bookTypeSwiftmend = GetSpellSlotTypeIdForName("Swiftmend")
+						local start, duration = GetSpellCooldown(slotSwiftmend, bookTypeSwiftmend)
+						if duration == 0 or (start > 0 and duration <= 1.5) then
+							castSpell("Swiftmend", this.unit)
+						end
+					end
+				end
+			end
 		end
 	else --Thanks Luna :^)
 		local name = UnitName(this.unit)
