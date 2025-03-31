@@ -53,11 +53,17 @@ function NotGrid:CreateUnitFrame(unitid,raidindex)
 	f.incheal = CreateFrame("Frame","$parenthealcommbar",f.healthbar) -- Was using a statusbar behind the health frame but when the frame's alpha is low this would be seen through it
 	
 	-- I was having problems with incheal covering up these fontstrings. My soluction is to parent them to the incheal, but set the relative point to the healthbar. And instead of hide/show the incheal I just lower/higher its color opacity
-	f.namehealthtext = f.incheal:CreateFontString("$parentnamehealthtext", "OVERLAY")
+	f.namehealthtext = f.incheal:CreateFontString("$parentnamehealthtext", "ARTWORK")
 	f.healcommtext = f.incheal:CreateFontString("$parenthealcommtext", "OVERLAY")
 
 	for i=1,8 do
 		f.healthbar["trackingicon"..i] = CreateFrame("Frame","$parenttrackingicon"..i,f.healthbar) -- easier to work with digits than topleft/topright/etc..
+		f.healthbar["trackingicon"..i]:SetFrameLevel(f.namehealthtext:GetParent():GetFrameLevel() + 1)
+		f.healthbar["trackingicon"..i]:SetFrameStrata("MEDIUM")
+		-- Добавляем текстуру для иконки спелла
+		f.healthbar["trackingicon"..i].spellicon = f.healthbar["trackingicon"..i]:CreateTexture("$parentspellicon", "BACKGROUND")
+		f.healthbar["trackingicon"..i].spellicon:SetAllPoints()
+		f.healthbar["trackingicon"..i].spellicon:SetAlpha(0.3) -- Полупрозрачность для фона
 	end
 
 	f.raidicon = CreateFrame("Frame", nil, f.healthbar)
