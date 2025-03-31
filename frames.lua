@@ -44,6 +44,16 @@ function NotGrid:CreateUnitFrame(unitid,raidindex)
 	f.roleIcon:SetHeight(20)
 	f.roleIcon:SetPoint("TOPRIGHT", f, "TOPRIGHT", 5, 5)
 	f.roleIcon:SetFrameLevel(f:GetFrameLevel() + 3)
+	
+	-- -- Add black circular border texture
+	-- f.roleIcon.border = f.roleIcon:CreateTexture(nil, "BACKGROUND")
+	-- f.roleIcon.border:SetTexture("Interface\\AddOns\\NotGrid\\media\\tank2")
+	-- f.roleIcon.border:SetVertexColor(0, 0, 0, 1)
+	-- f.roleIcon.border:SetWidth(22)  -- 4 pixels larger than the icon
+	-- f.roleIcon.border:SetHeight(22) -- 4 pixels larger than the icon
+	-- f.roleIcon.border:SetPoint("CENTER", f.roleIcon, "CENTER", 0, 0)
+	-- f.roleIcon.border:SetAlpha(0.65)
+	
 	f.roleIcon.texture = f.roleIcon:CreateTexture(nil, "OVERLAY")
 	f.roleIcon.texture:SetAllPoints()
 	f.roleIcon.texture:SetAlpha(0.85)

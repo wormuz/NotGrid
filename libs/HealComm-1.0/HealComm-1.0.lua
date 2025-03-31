@@ -1366,11 +1366,25 @@ function HealComm:SPELLCAST_INTERRUPTED()
 		self:SendAddonMessage("Resurrection/stop/")
 		self:cancelResurrection(UnitName("player"))
 	end
+	
+	-- Clear all spell cast info
 	self.CurrentSpellRank = nil
-	self.CurrentSpellName =  nil
+	self.CurrentSpellName = nil
 	self.spellIsCasting = nil
 	for key in pairs(self.SpellCastInfo) do
 		self.SpellCastInfo[key] = nil
+	end
+	
+	-- Clean up any empty tables in Heals
+	for target, healers in pairs(self.Heals) do
+		local hasHealers = false
+		for _ in pairs(healers) do
+			hasHealers = true
+			break
+		end
+		if not hasHealers then
+			self.Heals[target] = nil
+		end
 	end
 end
 
@@ -1435,10 +1449,24 @@ function HealComm:SPELLCAST_STOP()
 			self:ScheduleEvent("TriggerRegrowthHot", self.TriggerRegrowthHot, 0.3, self)
 		end
 	end
+	
+	-- Clear all spell cast info
 	self.CurrentSpellRank = nil
-	self.CurrentSpellName =  nil
+	self.CurrentSpellName = nil
 	for key in pairs(self.SpellCastInfo) do
 		self.SpellCastInfo[key] = nil
+	end
+	
+	-- Clean up any empty tables in Heals
+	for target, healers in pairs(self.Heals) do
+		local hasHealers = false
+		for _ in pairs(healers) do
+			hasHealers = true
+			break
+		end
+		if not hasHealers then
+			self.Heals[target] = nil
+		end
 	end
 end
 

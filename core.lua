@@ -55,6 +55,8 @@ function NotGrid:OnEnable()
 	self:RegisterEvent("UNIT_STATS", "UNIT_MAIN")
 	-- Aura changes (for druid forms)
 	self:RegisterEvent("UNIT_AURA", "UNIT_MAIN")
+	-- Unit death
+	self:RegisterEvent("UNIT_DIED", "UNIT_DIED")
 end
 
 function NotGrid:UNIT_RAID_TARGET(unitid)
@@ -154,12 +156,23 @@ function NotGrid:UNIT_MAIN(unitid)
 		local role = self:GetPlayerRole(unitid)
 		if role == "TANK" then
 			f.roleIcon.texture:SetTexture("Interface\\AddOns\\NotGrid\\media\\tank2")
+			if self.Banzai:GetUnitAggroByUnitId(unitid) then
+				-- f.roleIcon.border.texture:SetVertexColor(0.8, 0.2, 0.2, 1) -- Красная подсветка для танков под аггро
+			else
+				-- f.roleIcon.texture:SetVertexColor(0.2, 0.2, 0.2, 1) -- Черная подсветка для танков без аггро
+			end
 			f.roleIcon:Show()
 		elseif role == "HEALER" then
 			f.roleIcon.texture:SetTexture("Interface\\AddOns\\NotGrid\\media\\healer2")
+			if self.Banzai:GetUnitAggroByUnitId(unitid) then
+				f.roleIcon.texture:SetVertexColor(0.8, 0.2, 0.2, 1) -- Красная подсветка для танков под аггро
+			else
+				f.roleIcon.texture:SetVertexColor(0.2, 0.8, 0.2, 1) -- Зеленая подсветка для хилов
+			end
 			f.roleIcon:Show()
 		elseif role == "DPS" then
 			-- f.roleIcon.texture:SetTexture("Interface\\AddOns\\NotGrid\\media\\damage2")
+			-- f.roleIcon:Show()
 			f.roleIcon:Hide()
 		else
 			f.roleIcon:Hide()
@@ -520,11 +533,33 @@ end
 
 -- Healcomm
 
-function NotGrid:HealCommHandler(name) -- be nice if it sent us the unitid instead
-	local unitid = self.RosterLib:GetUnitIDFromName(name)
-	self:UNIT_MAIN(unitid)
-	if self.IdenticalUnits[unitid] then
-		self:UNIT_MAIN(self.IdenticalUnits[unitid])
+function NotGrid:HealCommHandler(name)
+	-- Find unitid for the name
+	local unitid
+	if name == UnitName("player") then
+		unitid = "player"
+	else
+		for i=1,40 do
+			if UnitExists("raid"..i) and UnitName("raid"..i) == name then
+				unitid = "raid"..i
+				break
+			end
+		end
+		if not unitid then
+			for i=1,4 do
+				if UnitExists("party"..i) and UnitName("party"..i) == name then
+					unitid = "party"..i
+					break
+				end
+			end
+		end
+	end
+	
+	if unitid then
+		self:UNIT_MAIN(unitid)
+		if self.IdenticalUnits[unitid] then
+			self:UNIT_MAIN(self.IdenticalUnits[unitid])
+		end
 	end
 end
 
@@ -603,6 +638,15 @@ function NotGrid:PLAYER_ENTERING_WORLD() -- when they login,reloadui,or zone in/
 	end
 	self:UpdateProximityMapVars() -- zoning into an instance won't trigger a zonechange event if the outdoors name is the same name as the indoors. This ensures the vars update.
 	self:BlizzFrameHandler()
+	
+	-- Update all raid units
+	if GetNumRaidMembers() > 0 then
+		for i=1,40 do
+			if UnitExists("raid"..i) then
+				self:UNIT_MAIN("raid"..i)
+			end
+		end
+	end
 end
 
 --have to handle the blizzframes seperately because rosterlib only fires if a member changed, wheras PARTY_MEMBERS_CHANGED fires for loot and other reasons as well
@@ -621,23 +665,38 @@ function NotGrid:GetPlayerRole(unitId)
 	local _, unitClass = UnitClass(unitId)
 	local name = UnitName(unitId)
 	
-	-- Check if unit is currently healing (has active heals)
-	local isHealing = false
-	if self.HealComm.Heals[name] then
-		for _, healData in pairs(self.HealComm.Heals[name]) do
-			if healData.ctime and healData.ctime > GetTime() then
-				isHealing = true
-				break
+	-- Check if warrior/paladin has aggro or druid is in bear form
+	if ((unitClass == "WARRIOR" or unitClass == "PALADIN") and self.Banzai:GetUnitAggroByUnitId(unitId)) or
+	   (unitClass == "DRUID" and self:HasBuff(unitId, "Dire Bear Form")) then
+		role = "TANK"
+	-- Check if player is healing
+	else
+		local isHealing = false
+		
+		-- Check single target heals
+		for target, healers in pairs(self.HealComm.Heals) do
+			for healer, info in pairs(healers) do
+				if healer == name then
+					isHealing = true
+					break
+				end
+			end
+			if isHealing then break end
+		end
+		
+		-- Check group heals
+		if not isHealing then
+			for caster, healInfo in pairs(self.HealComm.GrpHeals) do
+				if caster == name and healInfo.ctime and healInfo.ctime > GetTime() then
+					isHealing = true
+					break
+				end
 			end
 		end
-	end
-	
-	if isHealing then
-		role = "HEALER"
-	-- Check if warrior/paladin has aggro or druid is in bear form
-	elseif ((unitClass == "WARRIOR" or unitClass == "PALADIN") and self.Banzai:GetUnitAggroByUnitId(unitId)) or
-		   (unitClass == "DRUID" and self:HasBuff(unitId, "Dire Bear Form")) then
-		role = "TANK"
+		
+		if isHealing then
+			role = "HEALER"
+		end
 	end
 	
 	return role
@@ -659,23 +718,4 @@ function NotGrid:HasBuff(unitId, buffName)
 		i = i + 1
 	end
 	return false
-end
-
-function HealComm:stopHeal(caster)
-	if self:IsEventScheduled("Healcomm_"..caster) then
-		self:CancelScheduledEvent("Healcomm_"..caster)
-	end
-	if self.Lookup[caster] then
-		self.Heals[self.Lookup[caster]][caster] = nil
-		self:TriggerEvent("HealComm_Healupdate", self.Lookup[caster])
-		self.Lookup[caster] = nil
-		-- Clear role when player stops healing
-		if NotGrid then
-			local f = NotGrid:GetFrame(caster)
-			if f then
-				f.role = nil
-				f.roleicon:Hide()
-			end
-		end
-	end
 end
