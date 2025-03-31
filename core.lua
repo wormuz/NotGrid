@@ -51,6 +51,10 @@ function NotGrid:OnEnable()
 	--Proximity
 	self:RegisterEvent("NG_UNIT_PROXIMITY","UNIT_PROXIMITY")
 	self:ScheduleRepeatingEvent("NG_UNIT_PROXIMITY", self.o.proximityrate)
+	-- Stats changes
+	self:RegisterEvent("UNIT_STATS", "UNIT_MAIN")
+	-- Aura changes (for druid forms)
+	self:RegisterEvent("UNIT_AURA", "UNIT_MAIN")
 end
 
 function NotGrid:UNIT_RAID_TARGET(unitid)
@@ -144,6 +148,21 @@ function NotGrid:UNIT_MAIN(unitid)
 		f.powerbar:SetStatusBarColor(pcolor.r, pcolor.g, pcolor.b)
 		if o.colorpowerbarbgbytype then
 			f.powerbar.bgtex:SetVertexColor(pcolor.r, pcolor.g, pcolor.b)
+		end
+
+		-- Set role icon
+		local role = self:GetPlayerRole(unitid)
+		if role == "TANK" then
+			f.roleIcon.texture:SetTexture("Interface\\AddOns\\NotGrid\\media\\tank2")
+			f.roleIcon:Show()
+		elseif role == "HEALER" then
+			f.roleIcon.texture:SetTexture("Interface\\AddOns\\NotGrid\\media\\healer2")
+			f.roleIcon:Show()
+		elseif role == "DPS" then
+			f.roleIcon.texture:SetTexture("Interface\\AddOns\\NotGrid\\media\\damage2")
+			f.roleIcon:Show()
+		else
+			f.roleIcon:Hide()
 		end
 
 		if UnitIsConnected(unitid) then
@@ -595,4 +614,61 @@ function NotGrid:BlizzFrameHandler() -- called by PLAYER_ENTERING_WORLD,PARTY_ME
 			getglobal("PartyMemberFrame"..i):Hide();
 		end
 	end
+end
+
+function NotGrid:GetPlayerRole(unitId)
+	local role = "DPS" -- Default role
+	local _, unitClass = UnitClass(unitId)
+	local name = UnitName(unitId)
+	
+	-- Check class-specific indicators
+	if unitClass == "WARRIOR" or unitClass == "PALADIN" then
+		-- For warriors and paladins, check tank stats
+		local armor = self.ItemBonusLib:GetBonus("ARMOR")
+		local dodge = self.ItemBonusLib:GetBonus("DODGE")
+		local defense = self.ItemBonusLib:GetBonus("DEFENSE")
+		local block = self.ItemBonusLib:GetBonus("BLOCK")
+		local blockValue = self.ItemBonusLib:GetBonus("BLOCKVALUE")
+		
+		-- Check if they have significant tank stats (raid gear values)
+		if armor > 8000 or dodge > 25 or defense > 400 or block > 15 or blockValue > 150 then
+			role = "TANK"
+		end
+	elseif unitClass == "DRUID" then
+		-- For druids, check forms using Gratuity
+		local i = 1
+		while true do
+			if not UnitBuff(unitId, i) then break end
+			
+			self.Gratuity:SetUnitBuff(unitId, i)
+			local buffName = self.Gratuity:GetLine(1)
+			if not buffName then break end
+			
+			if buffName == "Dire Bear Form" then
+				role = "TANK"
+				break
+			elseif buffName == "Tree of Life Form" then
+				role = "HEALER"
+				break
+			elseif buffName == "Cat Form" or buffName == "Owl Form" then
+				role = "DPS"
+				break
+			end
+			
+			i = i + 1
+		end
+	end
+	
+	-- Check current actions using HealComm
+	if self.HealComm:UnitisResurrecting(name) then
+		role = "HEALER"
+	end
+	
+	-- Check aggro only for tanks
+	if role == "TANK" and self.Banzai:GetUnitAggroByUnitId(unitId) then
+		-- Confirm tank role
+		role = "TANK"
+	end
+	
+	return role
 end

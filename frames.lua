@@ -38,6 +38,17 @@ function NotGrid:CreateUnitFrame(unitid,raidindex)
 		f.pet = true -- so I have a boolean to check against
 	end
 
+	-- Add background role icon
+	f.roleIcon = CreateFrame("Frame", nil, f)
+	f.roleIcon:SetWidth(20)
+	f.roleIcon:SetHeight(20)
+	f.roleIcon:SetPoint("TOPRIGHT", f, "TOPRIGHT", 5, 5)
+	f.roleIcon:SetFrameLevel(f:GetFrameLevel() + 3)
+	f.roleIcon.texture = f.roleIcon:CreateTexture(nil, "OVERLAY")
+	f.roleIcon.texture:SetAllPoints()
+	f.roleIcon.texture:SetAlpha(0.85)
+	f.roleIcon:Hide()
+
 	f.border = CreateFrame("Frame","$parentborder",f) -- make a seperate frame for the edgefile/border for better customization possibilities
 	f.border.middleart = f.border:CreateTexture("NGArtworkMiddle", "ARTWORK")
 
