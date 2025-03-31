@@ -159,8 +159,8 @@ function NotGrid:UNIT_MAIN(unitid)
 			f.roleIcon.texture:SetTexture("Interface\\AddOns\\NotGrid\\media\\healer2")
 			f.roleIcon:Show()
 		elseif role == "DPS" then
-			f.roleIcon.texture:SetTexture("Interface\\AddOns\\NotGrid\\media\\damage2")
-			f.roleIcon:Show()
+			-- f.roleIcon.texture:SetTexture("Interface\\AddOns\\NotGrid\\media\\damage2")
+			f.roleIcon:Hide()
 		else
 			f.roleIcon:Hide()
 		end
@@ -621,54 +621,61 @@ function NotGrid:GetPlayerRole(unitId)
 	local _, unitClass = UnitClass(unitId)
 	local name = UnitName(unitId)
 	
-	-- Check class-specific indicators
-	if unitClass == "WARRIOR" or unitClass == "PALADIN" then
-		-- For warriors and paladins, check tank stats
-		local armor = self.ItemBonusLib:GetBonus("ARMOR")
-		local dodge = self.ItemBonusLib:GetBonus("DODGE")
-		local defense = self.ItemBonusLib:GetBonus("DEFENSE")
-		local block = self.ItemBonusLib:GetBonus("BLOCK")
-		local blockValue = self.ItemBonusLib:GetBonus("BLOCKVALUE")
-		
-		-- Check if they have significant tank stats (raid gear values)
-		if armor > 8000 or dodge > 25 or defense > 400 or block > 15 or blockValue > 150 then
-			role = "TANK"
-		end
-	elseif unitClass == "DRUID" then
-		-- For druids, check forms using Gratuity
-		local i = 1
-		while true do
-			if not UnitBuff(unitId, i) then break end
-			
-			self.Gratuity:SetUnitBuff(unitId, i)
-			local buffName = self.Gratuity:GetLine(1)
-			if not buffName then break end
-			
-			if buffName == "Dire Bear Form" then
-				role = "TANK"
-				break
-			elseif buffName == "Tree of Life Form" then
-				role = "HEALER"
-				break
-			elseif buffName == "Cat Form" or buffName == "Owl Form" then
-				role = "DPS"
+	-- Check if unit is currently healing (has active heals)
+	local isHealing = false
+	if self.HealComm.Heals[name] then
+		for _, healData in pairs(self.HealComm.Heals[name]) do
+			if healData.ctime and healData.ctime > GetTime() then
+				isHealing = true
 				break
 			end
-			
-			i = i + 1
 		end
 	end
 	
-	-- Check current actions using HealComm
-	if self.HealComm:UnitisResurrecting(name) then
+	if isHealing then
 		role = "HEALER"
-	end
-	
-	-- Check aggro only for tanks
-	if role == "TANK" and self.Banzai:GetUnitAggroByUnitId(unitId) then
-		-- Confirm tank role
+	-- Check if warrior/paladin has aggro or druid is in bear form
+	elseif ((unitClass == "WARRIOR" or unitClass == "PALADIN") and self.Banzai:GetUnitAggroByUnitId(unitId)) or
+		   (unitClass == "DRUID" and self:HasBuff(unitId, "Dire Bear Form")) then
 		role = "TANK"
 	end
 	
 	return role
+end
+
+function NotGrid:HasBuff(unitId, buffName)
+	local i = 1
+	while true do
+		if not UnitBuff(unitId, i) then break end
+		
+		self.Gratuity:SetUnitBuff(unitId, i)
+		local buff = self.Gratuity:GetLine(1)
+		if not buff then break end
+		
+		if buff == buffName then
+			return true
+		end
+		
+		i = i + 1
+	end
+	return false
+end
+
+function HealComm:stopHeal(caster)
+	if self:IsEventScheduled("Healcomm_"..caster) then
+		self:CancelScheduledEvent("Healcomm_"..caster)
+	end
+	if self.Lookup[caster] then
+		self.Heals[self.Lookup[caster]][caster] = nil
+		self:TriggerEvent("HealComm_Healupdate", self.Lookup[caster])
+		self.Lookup[caster] = nil
+		-- Clear role when player stops healing
+		if NotGrid then
+			local f = NotGrid:GetFrame(caster)
+			if f then
+				f.role = nil
+				f.roleicon:Hide()
+			end
+		end
+	end
 end
