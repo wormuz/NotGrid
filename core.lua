@@ -55,8 +55,6 @@ function NotGrid:OnEnable()
 	self:RegisterEvent("UNIT_STATS", "UNIT_MAIN")
 	-- Aura changes (for druid forms)
 	self:RegisterEvent("UNIT_AURA", "UNIT_MAIN")
-	-- Unit death
-	self:RegisterEvent("UNIT_DIED", "UNIT_DIED")
 end
 
 function NotGrid:UNIT_RAID_TARGET(unitid)
