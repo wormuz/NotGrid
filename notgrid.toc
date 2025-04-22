@@ -31,3 +31,4 @@ mapsizes.lua
 proximity.lua
 options.lua
 menus.lua
+NotGridNameTruncate.lua

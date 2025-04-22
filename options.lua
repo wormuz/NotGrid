@@ -15,7 +15,8 @@ local DefaultOptions = {
 	["unithealthbarcolor"] = {39/255,186/255,42/255,1},
 	["unithealthbarbgcolor"] = {0,0,0,0.1},
 	["unithealthbarbgtexture"] = "Interface\\Buttons\\WHITE8X8",
-	["unitfont"] = "Fonts\\ARIALN.TTF",
+	-- ["unitfont"] = "Fonts\\ARIALN.TTF",
+	["unitfont"] = "Fonts\\custom\\RobotoCondensed-Regular.ttf",
 	["unitnamehealthtextcolor"] = {1,1,1,1},
 	["unitnamehealthtextsize"] = 12,
 	["unithealcommbarcolor"] = {32/255,112/255,11/255,1},
@@ -26,6 +27,7 @@ local DefaultOptions = {
 	["unittrackingiconsize"] = 6,
 	["unittrackingiconborder"] = 1,
 	["unittrackingiconbordercolor"] = {0,0,0,1},
+	["unitnumberfont"] = "Fonts\\custom\\SF-Pro-Display-Medium.ttf",
 
 	["showraidicon"] = true,
 	["raidiconsize"] = 10,

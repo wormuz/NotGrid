@@ -441,36 +441,19 @@ function NotGrid:ClickHandle(button)
 			DropItemOnUnit(this.unit)
 		else
 			TargetUnit(this.unit)
-
-			if has_unitxp and playerClass == "DRUID" then
-				if UnitXP("inSight", "player", this.unit) and UnitXP("distanceBetween", "player", this.unit) <= 40 then
-
-					local deficit = UnitHealthMax(this.unit) - UnitHealth(this.unit)
-					local deficitPercent = (deficit / UnitHealthMax(this.unit)) * 100
-					local hasRejuv, hasRegrowth, hasAbolish, hasCurse, hasPoison = hasUnitBuff(this.unit)
-
-					if hasCurse then
-						castSpell("Remove Curse", this.unit)
-					elseif hasPoison and not hasAbolish then
-						castSpell("Abolish Poison", this.unit)
-					elseif deficitPercent > 10 and (hasRegrowth or hasRejuv) then
-						local slotSwiftmend, bookTypeSwiftmend = GetSpellSlotTypeIdForName("Swiftmend")
-						local start, duration = GetSpellCooldown(slotSwiftmend, bookTypeSwiftmend)
-						if duration == 0 or (start > 0 and duration <= 1.5) then
-							castSpell("Swiftmend", this.unit)
-						end
-					end
-				end
-			end
 		end
-	else --Thanks Luna :^)
-		local name = UnitName(this.unit)
-		local id = string.sub(this.unit,5)
-		local unit = this.unit
-		local menuFrame = FriendsDropDown
-		menuFrame.displayMode = "MENU"
-		menuFrame.initialize = function() UnitPopup_ShowMenu(getglobal(UIDROPDOWNMENU_OPEN_MENU), "PARTY", unit, name, id) end
-		ToggleDropDownMenu(1, nil, FriendsDropDown, "cursor")
+	elseif button == "RightButton" then
+		if IsControlKeyDown() then
+			ToggleFriendsFrame(4) -- Открываем окно рейда (4 - это индекс для рейда)
+		else
+			local name = UnitName(this.unit)
+			local id = string.sub(this.unit,5)
+			local unit = this.unit
+			local menuFrame = FriendsDropDown
+			menuFrame.displayMode = "MENU"
+			menuFrame.initialize = function() UnitPopup_ShowMenu(getglobal(UIDROPDOWNMENU_OPEN_MENU), "PARTY", unit, name, id) end
+			ToggleDropDownMenu(1, nil, FriendsDropDown, "cursor")
+		end
 	end
 end
 
@@ -663,9 +646,9 @@ function NotGrid:GetPlayerRole(unitId)
 	local _, unitClass = UnitClass(unitId)
 	local name = UnitName(unitId)
 	
-	-- Check if warrior/paladin has aggro or druid is in bear form
+	-- Check if warrior/paladin has aggro or druid is in bear form with aggro
 	if ((unitClass == "WARRIOR" or unitClass == "PALADIN") and self.Banzai:GetUnitAggroByUnitId(unitId)) or
-	   (unitClass == "DRUID" and self:HasBuff(unitId, "Dire Bear Form")) then
+	   (unitClass == "DRUID" and self:HasBuff(unitId, "Dire Bear Form") and self.Banzai:GetUnitAggroByUnitId(unitId)) then
 		role = "TANK"
 	-- Check if player is healing
 	else

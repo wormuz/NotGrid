@@ -448,3 +448,294 @@ function NotGrid:PositionFrames()
 
 	self.Compost:Reclaim(SubGroupCounts)
 end
+
+function NotGrid:UNIT_MAIN(unitid)
+	local o = self.o
+	local f = self.UnitFrames[unitid]
+	if o.configmode then
+		unitid = "player"
+	end
+
+	if f and UnitExists(unitid) then
+		local name = UnitName(unitid)
+		local shortname = name
+		
+		-- Check if name starts with "Pepe" and truncate it
+		if string.sub(name, 1, 4) == "Pepe" then
+			shortname = "Pepe"
+		else
+			-- Function to check if character is a consonant
+			local function isConsonant(char)
+				local vowels = {"a","e","i","o","u","A","E","I","O","U"}
+				for _, vowel in ipairs(vowels) do
+					if char == vowel then
+						return false
+					end
+				end
+				return true
+			end
+			
+			-- Function to remove vowels one by one until name is short enough
+			local function removeVowelsUntilShort(name, maxLength)
+				local firstChar = string.sub(name, 1, 1) -- Save first character
+				local result = string.sub(name, 2) -- Remove first character
+				local vowels = {"a","e","i","o","u","A","E","I","O","U"}
+				
+				-- Keep removing vowels until name is short enough
+				while string.len(result) > maxLength - 1 do -- -1 because we'll add firstChar back
+					local foundVowel = false
+					-- Find first vowel in the name
+					for i = 1, string.len(result) do
+						local char = string.sub(result, i, i)
+						for _, vowel in ipairs(vowels) do
+							if char == vowel then
+								-- Remove this vowel
+								result = string.sub(result, 1, i-1) .. string.sub(result, i+1)
+								foundVowel = true
+								break
+							end
+						end
+						if foundVowel then break end
+					end
+					-- If no more vowels found, break the loop
+					if not foundVowel then break end
+				end
+				
+				return firstChar .. result -- Add first character back
+			end
+			
+			-- First try removing vowels
+			shortname = removeVowelsUntilShort(name, o.namelength)
+			
+			-- If still too long, take first letter, one consonant after it, and two last consonants
+			if string.len(shortname) > o.namelength then
+				local firstChar = string.sub(shortname, 1, 1) -- Save first character
+				local restOfName = string.sub(shortname, 2) -- Remove first character
+				local firstConsonant = ""
+				local lastConsonants = ""
+				local consonantCount = 0
+				
+				-- Get first consonant from the rest of the name
+				for i = 1, string.len(restOfName) do
+					local char = string.sub(restOfName, i, i)
+					if isConsonant(char) then
+						firstConsonant = char
+						break
+					end
+				end
+				
+				-- Get last two consonants from the rest of the name
+				consonantCount = 0
+				for i = string.len(restOfName), 1, -1 do
+					if consonantCount >= 2 then break end
+					local char = string.sub(restOfName, i, i)
+					if isConsonant(char) then
+						lastConsonants = char .. lastConsonants
+						consonantCount = consonantCount + 1
+					end
+				end
+				
+				shortname = firstChar .. firstConsonant .. lastConsonants
+			end
+		end
+		
+		local _,class = UnitClass(unitid)
+		local powertype = UnitPowerType(unitid)
+		local pcolor = ManaBarColor[powertype]
+		local color = {}
+
+		if o.configmode then
+			local c = {"WARRIOR","PALADIN","HUNTER","ROGUE","PRIEST","SHAMAN","MAGE","WARLOCK","DRUID"}
+			local id = string.sub(f.unit, -1)
+			id = tonumber(id)
+			if id == 0 then id = 1 end
+			if id == 1 then
+				pcolor = ManaBarColor[1]
+			elseif id == 4 then
+				pcolor = ManaBarColor[3]
+			else
+				pcolor = ManaBarColor[0]
+			end
+			class = c[id]
+		end
+
+		if f.pet and o.usepetcolor then
+			color.r,color.g,color.b = unpack(o.petcolor)
+		elseif class and class == "SHAMAN" and o.useshamancolor then
+			color = {r=0.14,g=0.35,b=1}
+		elseif class then
+			color = RAID_CLASS_COLORS[class]
+		else
+			color = {r=1,g=0,b=1}
+		end
+
+		--update some stuff
+		f.name = name
+		--handle coloring text
+		if o.colorunithealthbarbyclass then
+			f.healthbar:SetStatusBarColor(color.r, color.g, color.b, o.unithealthbarcolor[4])
+		end
+		if o.colorunitnamehealthbyclass then
+			f.namehealthtext:SetTextColor(color.r, color.g, color.b, o.unitnamehealthtextcolor[4])
+		end
+		if o.colorunithealthbarbgbyclass then
+			f.healthbar.bgtex:SetVertexColor(color.r, color.g, color.b)
+		end
+
+		f.powerbar:SetStatusBarColor(pcolor.r, pcolor.g, pcolor.b)
+		if o.colorpowerbarbgbytype then
+			f.powerbar.bgtex:SetVertexColor(pcolor.r, pcolor.g, pcolor.b)
+		end
+
+		-- Set role icon
+		local role = self:GetPlayerRole(unitid)
+		if role == "TANK" then
+			f.roleIcon.texture:SetTexture("Interface\\AddOns\\NotGrid\\media\\tank2")
+			if self.Banzai:GetUnitAggroByUnitId(unitid) then
+				-- f.roleIcon.border.texture:SetVertexColor(0.8, 0.2, 0.2, 1) -- Красная подсветка для танков под аггро
+			else
+				-- f.roleIcon.texture:SetVertexColor(0.2, 0.2, 0.2, 1) -- Черная подсветка для танков без аггро
+			end
+			f.roleIcon:Show()
+		elseif role == "HEALER" then
+			f.roleIcon.texture:SetTexture("Interface\\AddOns\\NotGrid\\media\\healer2")
+			if self.Banzai:GetUnitAggroByUnitId(unitid) then
+				f.roleIcon.texture:SetVertexColor(0.8, 0.2, 0.2, 1) -- Красная подсветка для танков под аггро
+			else
+				f.roleIcon.texture:SetVertexColor(0.2, 0.8, 0.2, 1) -- Зеленая подсветка для хилов
+			end
+			f.roleIcon:Show()
+		elseif role == "DPS" then
+			-- f.roleIcon.texture:SetTexture("Interface\\AddOns\\NotGrid\\media\\damage2")
+			-- f.roleIcon:Show()
+			f.roleIcon:Hide()
+		else
+			f.roleIcon:Hide()
+		end
+
+		if UnitIsConnected(unitid) then
+			local healamount, currhealth, maxhealth, deficit, healtext, currpower, maxpower
+			if o.configmode then
+				currhealth = UnitHealth(unitid)/2
+				maxhealth = UnitHealthMax(unitid)
+				deficit = maxhealth - currhealth
+				currpower = UnitManaMax(unitid)/2
+				maxpower = UnitManaMax(unitid)
+				healamount = maxhealth/4
+			else
+				currhealth = UnitHealth(unitid)
+				maxhealth = UnitHealthMax(unitid)
+				deficit = maxhealth - currhealth
+				currpower = UnitMana(unitid)
+				maxpower = UnitManaMax(unitid)
+				healamount = self.HealComm:getHeal(name)
+			end
+
+			if healamount > 999 then
+				healtext = string.format("+%.1fk", healamount/1000.0)
+			else
+				healtext = string.format("+%d", healamount)
+			end
+
+			f.healthbar:SetMinMaxValues(0, maxhealth)
+			f.healthbar:SetValue(currhealth)
+
+			f.powerbar:SetMinMaxValues(0, maxpower)
+			f.powerbar:SetValue(currpower)
+
+			if UnitIsDead(unitid) then
+				self:UnitHealthZero(f, "Вмер", shortname)
+			elseif UnitIsGhost(unitid) or (deficit >= maxhealth) then
+				self:UnitHealthZero(f, "Дух", shortname)
+			elseif currhealth/maxhealth*100 <= self.o.healththreshhold then
+				local deficittext
+				if deficit > 999 then
+					deficittext = string.format("-%.1fk", deficit/1000.0)
+				else
+					deficittext = string.format("-%d", deficit)
+				end
+				f.namehealthtext:SetFont(o.unitnumberfont, o.unitnamehealthtextsize)
+				f.namehealthtext:SetText(deficittext)
+			else
+				f.namehealthtext:SetFont(o.unitfont, o.unitnamehealthtextsize)
+				f.namehealthtext:SetText(shortname)
+			end
+
+			if healamount > 0 then
+				if o.showhealcommbar then
+					self:SetIncHealFrame(f, healamount, currhealth, maxhealth)
+				end
+				if o.showhealcommtext then
+					f.healcommtext:SetFont(o.unitnumberfont, o.unithealcommtextsize)
+					f.healcommtext:SetText(healtext)
+					f.healcommtext:Show()
+				end
+			else
+				f.incheal:SetBackdropColor(0,0,0,0)
+				f.healcommtext:Hide()
+			end
+
+			if self.HealComm:UnitisResurrecting(name) then
+				f.incres:Show()
+			else
+				f.incres:Hide()
+			end
+		else
+			self:UnitHealthZero(f, "Офл", shortname)
+		end
+	end
+end
+
+function NotGrid:UnitHealthZero(f, state, shortname)
+	f.namehealthtext:SetFont(self.o.unitfont, self.o.unitnamehealthtextsize)
+	f.namehealthtext:SetText(shortname.."\n"..state)
+end
+
+function NotGrid:ClickHandle(button)
+	if button == "RightButton" and SpellIsTargeting() then
+		SpellStopTargeting()
+		return
+	end
+	if button == "LeftButton" then
+		if SpellIsTargeting() then
+			SpellTargetUnit(this.unit)
+		elseif CursorHasItem() then
+			DropItemOnUnit(this.unit)
+		else
+			TargetUnit(this.unit)
+
+			if has_unitxp and playerClass == "DRUID" then
+				if UnitXP("inSight", "player", this.unit) and UnitXP("distanceBetween", "player", this.unit) <= 40 then
+
+					local deficit = UnitHealthMax(this.unit) - UnitHealth(this.unit)
+					local deficitPercent = (deficit / UnitHealthMax(this.unit)) * 100
+					local hasRejuv, hasRegrowth, hasAbolish, hasCurse, hasPoison = hasUnitBuff(this.unit)
+
+					if hasCurse then
+						castSpell("Remove Curse", this.unit)
+					elseif hasPoison and not hasAbolish then
+						castSpell("Abolish Poison", this.unit)
+					elseif deficitPercent > 10 and (hasRegrowth or hasRejuv) then
+						local slotSwiftmend, bookTypeSwiftmend = GetSpellSlotTypeIdForName("Swiftmend")
+						local start, duration = GetSpellCooldown(slotSwiftmend, "spell")
+						if duration == 0 or (start > 0 and duration <= 1.5) then
+							castSpell("Swiftmend", this.unit)
+						end
+					end
+				end
+			end
+		end
+	elseif button == "RightButton" then
+		if IsControlKeyDown() then
+			ToggleFriendsFrame(4) -- Открываем окно рейда (4 - это индекс для рейда)
+		else
+			local name = UnitName(this.unit)
+			local id = string.sub(this.unit,5)
+			local unit = this.unit
+			local menuFrame = FriendsDropDown
+			menuFrame.displayMode = "MENU"
+			menuFrame.initialize = function() UnitPopup_ShowMenu(getglobal(UIDROPDOWNMENU_OPEN_MENU), "PARTY", unit, name, id) end
+			ToggleDropDownMenu(1, nil, FriendsDropDown, "cursor")
+		end
+	end
+end
